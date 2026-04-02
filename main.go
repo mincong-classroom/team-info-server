@@ -20,10 +20,17 @@ func validateTeam(team string) error {
 }
 
 type TeamInfo struct {
-	Team      string            `json:"team"`
-	K8sLabels map[string]string `json:"k8s_labels"`
-	GitRepo   string            `json:"git_repo"`
-	DockerRepo string            `json:"docker_repo"`
+	Team        string            `json:"team"`
+	K8sLabels   map[string]string `json:"k8s_labels"`
+	GitRepo     string            `json:"git_repo"`
+	DockerRepos []DockerRepo      `json:"docker_repos"`
+}
+
+type DockerRepo struct {
+	Id      string `json:"id"`
+	Name    string `json:"name"`
+	RepoUrl string `json:"repo_url"`
+	WebUrl  string `json:"web_url"`
 }
 
 func main() {
@@ -56,8 +63,33 @@ func main() {
 			K8sLabels: map[string]string{
 				"team": team,
 			},
-			GitRepo:    fmt.Sprintf("https://github.com/mincong-classroom/k8s-%s", team),
-			DockerRepo: fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-%s", team),
+			GitRepo: fmt.Sprintf("https://github.com/mincong-classroom/k8s-%s", team),
+			DockerRepos: []DockerRepo{
+				{
+					Id:      fmt.Sprintf("spring-petclinic-%s", team),            // ex: "spring-petclinic-east-1"
+					Name:    fmt.Sprintf("Spring PetClinic Monolith (%s)", team), // ex: "Spring PetClinic Monolith (east-1)"
+					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-%s", team),
+					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-%s", team),
+				},
+				{
+					Id:      fmt.Sprintf("spring-petclinic-api-gateway-%s", team),                   // ex: "spring-petclinic-api-gateway-east-1"
+					Name:    fmt.Sprintf("Spring PetClinic Microservices - API Gateway (%s)", team), // ex: "Spring PetClinic Microservices - API Gateway (east-1)"
+					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-api-gateway-%s", team),
+					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-api-gateway-%s", team),
+				},
+				{
+					Id:      fmt.Sprintf("spring-petclinic-customers-service-%s", team),
+					Name:    fmt.Sprintf("Spring PetClinic Microservices - Customers Service (%s)", team),
+					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-customers-service-%s", team),
+					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-customers-service-%s", team),
+				},
+				{
+					Id:      fmt.Sprintf("spring-petclinic-vets-service-%s", team),
+					Name:    fmt.Sprintf("Spring PetClinic Microservices - Veterinarians Service (%s)", team),
+					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-vets-service-%s", team),
+					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-vets-service-%s", team),
+				},
+			},
 		}
 
 		w.Header().Set("Content-Type", "application/json")
