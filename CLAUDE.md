@@ -91,3 +91,7 @@ When updating the Go version, update all of these files:
 2. `Dockerfile` — Builder stage base image (`golang:X.XX-alpine`)
 3. `.github/workflows/build.yml` — CI/CD setup-go action version
 4. `CLAUDE.md` — This documentation
+
+## GitHub Actions Workflow Notes
+
+**Docker build caching:** Do not add `cache-from` or `cache-to` options to `docker/build-push-action`. The GitHub Actions docker driver does not support cache export and raises "Cache export is not supported for the docker driver" error. Build optimization is not a priority at this stage.
