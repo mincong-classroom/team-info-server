@@ -1,9 +1,7 @@
 name: build
 
 on:
-  push:
-    branches:
-      - "**" # all branches
+  push
 
 jobs:
   build:
