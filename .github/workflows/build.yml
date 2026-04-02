@@ -16,7 +16,7 @@ jobs:
           go build -o bin/team-info-server ./main.go
       - name: Test
         run: |
-          go test ./... || true
+          go test ./...
 
   docker-build:
     runs-on: ubuntu-latest
