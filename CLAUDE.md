@@ -29,6 +29,18 @@ TEAM=east-1 go run main.go
 TEAM=east-1 ./bin/server
 ```
 
+### Test
+```bash
+# Run all tests
+go test ./...
+
+# Run with verbose output
+go test -v ./...
+
+# Run specific test
+go test -run TestTeamInfoHandler
+```
+
 ### Docker
 ```bash
 # Build image
@@ -51,6 +63,16 @@ docker run -e TEAM=east-1 -p 8090:8090 team-info-server
   - Version tag (e.g., `1.2.3` or `1.2.3-alpha-1`)
   - `latest`
   - `sha-abc123def` (commit reference)
+
+## Testing
+
+The project includes unit tests in `main_test.go` that verify:
+- HTTP handler returns correct JSON response
+- Different team values are correctly formatted in git and docker repo URLs
+- K8s labels are properly set
+- JSON marshaling/unmarshaling works correctly
+
+Tests use table-driven testing pattern to cover multiple team values.
 
 ## Architecture
 
