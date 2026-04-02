@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **team-info-server** is a lightweight Go HTTP server that serves team metadata in JSON format. It's designed as a teaching tool for students to learn about environment variables and Kubernetes configuration.
 
-- **Language**: Go 1.23
+- **Language**: Go 1.26
 - **Primary File**: `main.go` (single-file project)
 - **Port**: 8090
 - **Docker**: Multi-stage build with scratch base image
@@ -69,3 +69,11 @@ docker run -e TEAM=east-1 -p 8090:8090 team-info-server
 - The HTTP handler logs all requests with method and path
 - Response always uses JSON content-type header
 - `json.NewEncoder()` is used for streaming JSON encoding
+
+## Go Version Updates
+
+When updating the Go version, update all of these files:
+1. `go.mod` — Module Go version directive
+2. `Dockerfile` — Builder stage base image (`golang:X.XX-alpine`)
+3. `.github/workflows/build.yml` — CI/CD setup-go action version
+4. `CLAUDE.md` — This documentation
