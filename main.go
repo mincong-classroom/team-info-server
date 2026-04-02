@@ -5,9 +5,19 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 )
 
 const port = "8090" // avoids conflicts with the Spring PetClinic app (8080)
+
+var teamPattern = regexp.MustCompile(`^(east|west|south|north)-[0-9]$`)
+
+func validateTeam(team string) error {
+	if !teamPattern.MatchString(team) {
+		return fmt.Errorf("invalid team format: %q. Expected format: {region}-{digit} where region is one of: east, west, south, north", team)
+	}
+	return nil
+}
 
 type TeamInfo struct {
 	Team      string            `json:"team"`
@@ -28,6 +38,12 @@ func main() {
 		// This is intentional to let students practice troubleshooting errors in Kubernetes and
 		// setting environment variables in the manifest.
 		fmt.Printf("Environment variable %q is not set\n", "TEAM")
+		fmt.Println("Exiting...")
+		os.Exit(1)
+	}
+
+	if err := validateTeam(team); err != nil {
+		fmt.Println(err)
 		fmt.Println("Exiting...")
 		os.Exit(1)
 	}
