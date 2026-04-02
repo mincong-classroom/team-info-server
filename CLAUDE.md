@@ -84,7 +84,7 @@ Tests use table-driven testing pattern to cover multiple team values.
   - `team`: The team identifier from TEAM env var
   - `k8s_labels`: Kubernetes labels as a map
   - `git_repo`: Constructed GitHub URL
-  - `docker_repo`: Constructed Docker Hub URL
+  - `docker_repos`: Constructed Docker Hub URLs (array)
 
 **Startup Flow**:
 1. Validates required `TEAM` environment variable (exits if missing - intentional for teaching)
