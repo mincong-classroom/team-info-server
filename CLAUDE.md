@@ -38,6 +38,8 @@ docker build -t team-info-server .
 docker run -e TEAM=east-1 -p 8090:8090 team-info-server
 ```
 
+**Multi-platform builds** are enabled in GitHub Actions CI/CD. Pushes to the repository automatically build and push images for `linux/amd64` and `linux/arm64` platforms.
+
 ## Architecture
 
 ### Core Components
