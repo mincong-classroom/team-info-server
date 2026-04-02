@@ -94,4 +94,6 @@ When updating the Go version, update all of these files:
 
 ## GitHub Actions Workflow Notes
 
+**Multi-platform builds:** The workflow uses `docker/setup-buildx-action@v3` to enable multi-platform Docker builds for linux/amd64 and linux/arm64. This step must come before `docker/build-push-action` to support multi-platform builds (the default docker driver does not support this).
+
 **Docker build caching:** Do not add `cache-from` or `cache-to` options to `docker/build-push-action`. The GitHub Actions docker driver does not support cache export and raises "Cache export is not supported for the docker driver" error. Build optimization is not a priority at this stage.
