@@ -38,12 +38,17 @@ docker build -t team-info-server .
 docker run -e TEAM=east-1 -p 8090:8090 team-info-server
 ```
 
-**Multi-platform builds** are enabled in GitHub Actions CI/CD. The workflow always builds images for `linux/amd64` and `linux/arm64` platforms, but only pushes to Docker Hub when you push a Git tag in the format `v{version}` (e.g., `v1.0.0`).
+**Multi-platform builds** are enabled in GitHub Actions CI/CD. The workflow always builds images for `linux/amd64` and `linux/arm64` platforms, but only pushes to Docker Hub when you push a Git tag in semantic versioning format.
+
+**Supported tag formats:**
+- `v1.0.0` (release)
+- `v1.0.0-alpha` (pre-release)
+- `v1.0.0-alpha-1`, `v1.0.0-beta.2`, `v1.0.0-rc.1` (pre-release variants)
 
 **Behavior:**
 - On commit push: Builds image locally but does not push
-- On version tag (e.g., `v1.2.3`): Builds and pushes to Docker Hub with tags:
-  - `1.2.3` (version from tag)
+- On version tag (e.g., `v1.2.3` or `v1.2.3-alpha-1`): Builds and pushes to Docker Hub with tags:
+  - Version tag (e.g., `1.2.3` or `1.2.3-alpha-1`)
   - `latest`
   - `sha-abc123def` (commit reference)
 

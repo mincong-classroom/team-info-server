@@ -27,7 +27,7 @@ jobs:
       - name: Determine if publishing (version tag)
         id: publish
         run: |
-          if [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+          if [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
             echo "should_push=true" >> $GITHUB_OUTPUT
             VERSION=${GITHUB_REF#refs/tags/v}
             echo "version=${VERSION}" >> $GITHUB_OUTPUT
