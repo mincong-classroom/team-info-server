@@ -50,19 +50,27 @@ docker build -t team-info-server .
 docker run -e TEAM=east-1 -p 8090:8090 team-info-server
 ```
 
-**Multi-platform builds** are enabled in GitHub Actions CI/CD. The workflow always builds images for `linux/amd64` and `linux/arm64` platforms, but only pushes to Docker Hub when you push a Git tag in semantic versioning format.
+**Multi-platform builds** are enabled in GitHub Actions CI/CD. The workflow always builds images for `linux/amd64` and `linux/arm64` platforms, but only pushes to Docker Hub when you push a Git tag in the year.release format.
 
-**Supported tag formats:**
-- `v1.0.0` (release)
-- `v1.0.0-alpha` (pre-release)
-- `v1.0.0-alpha-1`, `v1.0.0-beta.2`, `v1.0.0-rc.1` (pre-release variants)
+**Version tag format:**
+- `v{year}.{release}` — Official releases (e.g., `v2026.0`, `v2026.1`)
+  - `{year}`: Current year (e.g., `2026`)
+  - `{release}`: Release sequence in that year (0 = first release, 1 = second release, etc.)
+
+**Release candidate format:**
+- `v{year}.{release}-rc{i}` — Release candidates (e.g., `v2026.0-rc1`, `v2026.0-rc2`)
+  - `{i}`: Release candidate number
 
 **Behavior:**
 - On commit push: Builds image locally but does not push
-- On version tag (e.g., `v1.2.3` or `v1.2.3-alpha-1`): Builds and pushes to Docker Hub with tags:
-  - Version tag (e.g., `1.2.3` or `1.2.3-alpha-1`)
+- On release tag (e.g., `v2026.0`): Builds and pushes to Docker Hub with tags:
+  - Version tag (e.g., `2026.0`)
   - `latest`
   - `sha-abc123def` (commit reference)
+- On release candidate tag (e.g., `v2026.0-rc1`): Builds and pushes to Docker Hub with tags:
+  - Version tag (e.g., `2026.0-rc1`)
+  - `sha-abc123def` (commit reference)
+  - **Note:** `latest` tag is NOT updated for release candidates
 
 ## Testing
 
