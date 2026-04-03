@@ -29,10 +29,18 @@ jobs:
       - name: Determine if publishing (version tag)
         id: publish
         run: |
-          if [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+          if [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+(-rc[0-9]+)?$ ]]; then
             echo "should_push=true" >> $GITHUB_OUTPUT
             VERSION=${GITHUB_REF#refs/tags/v}
             echo "version=${VERSION}" >> $GITHUB_OUTPUT
+            # Check if it's a release candidate (contains -rc pattern), for example:
+            #   - "v2026.0-rc1" is a release candidate
+            #   - "v2026.0" is not a release candidate
+            if [[ "$VERSION" =~ -rc[0-9]+$ ]]; then
+              echo "is_release_candidate=true" >> $GITHUB_OUTPUT
+            else
+              echo "is_release_candidate=false" >> $GITHUB_OUTPUT
+            fi
           else
             echo "should_push=false" >> $GITHUB_OUTPUT
           fi
@@ -50,7 +58,7 @@ jobs:
             mincongclassroom/team-info-server
           tags: |
             type=raw,value=${{ steps.publish.outputs.version }},enable=${{ steps.publish.outputs.should_push == 'true' }}
-            type=raw,value=latest,enable=${{ steps.publish.outputs.should_push == 'true' }}
+            type=raw,value=latest,enable=${{ steps.publish.outputs.should_push == 'true' && steps.publish.outputs.is_release_candidate == 'false' }}
             type=sha
       - name: Build and push Docker image
         id: build
