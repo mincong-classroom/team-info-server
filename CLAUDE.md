@@ -99,6 +99,12 @@ Tests use table-driven testing pattern to cover multiple team values.
 2. Sets up HTTP handler
 3. Starts server on port 8090
 
+**Valid TEAM Values**:
+- Student teams: `{region}-{digit}` format (e.g., `east-1`, `west-2`, `south-0`, `north-9`)
+  - Regions: east, west, south, north
+  - Digit: 0-9
+- Reserved: `teacher` — For instructor-only access (not documented in README)
+
 ### Key Design Decisions
 
 - **Lightweight**: Uses only Go standard library, no external dependencies
