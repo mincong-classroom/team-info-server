@@ -33,6 +33,14 @@ func TestTeamInfoHandler(t *testing.T) {
 			wantGit:            "https://github.com/mincong-classroom/k8s-west-2",
 			wantDockerRepoCount: 4,
 		},
+		{
+			name:               "teacher",
+			teamValue:          "teacher",
+			wantCode:           http.StatusOK,
+			wantTeam:           "teacher",
+			wantGit:            "https://github.com/mincong-classroom/k8s-teacher",
+			wantDockerRepoCount: 4,
+		},
 	}
 
 	for _, tt := range tests {
@@ -184,6 +192,11 @@ func TestValidateTeam(t *testing.T) {
 		{
 			name:      "valid north-9",
 			teamValue: "north-9",
+			wantError: false,
+		},
+		{
+			name:      "valid teacher",
+			teamValue: "teacher",
 			wantError: false,
 		},
 		// Invalid formats

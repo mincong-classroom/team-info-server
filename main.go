@@ -13,10 +13,10 @@ const port = "8090" // avoids conflicts with the Spring PetClinic app (8080)
 var teamPattern = regexp.MustCompile(`^(east|west|south|north)-[0-9]$`)
 
 func validateTeam(team string) error {
-	if !teamPattern.MatchString(team) {
-		return fmt.Errorf("invalid team format: %q. Expected format: {region}-{digit} where region is one of: east, west, south, north", team)
+	if team == "teacher" || teamPattern.MatchString(team) {
+		return nil
 	}
-	return nil
+	return fmt.Errorf("invalid team format: %q. Expected format: {region}-{digit} where region is one of: east, west, south, north", team)
 }
 
 type TeamInfo struct {
