@@ -7,19 +7,17 @@ Team Info Server is a simple Go web server that returns team metadata in JSON fo
 
 ## Core Configuration
 
-This server is configured **entirely through environment variables** — there are no config files or command-line flags. This mirrors how applications are configured in Kubernetes, where you set these values in your Deployment manifest.
-
-If this is your first time here, start with this table. There is exactly **one required variable** (`TEAM_ID`) and **one optional variable** (`TEAM_MEMBERS`):
+This server is configured through environment variables. Here are the entries used by the server:
 
 | Variable       | Required | Description                                                                                                         | Example                |
 | -------------- | -------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------- |
 | `TEAM_ID`      | Yes      | Your team's identifier. Must match `{region}-{digit}` (see [Team ID](#team-id)). The server refuses to start without a valid value. | `east-1`               |
-| `TEAM_MEMBERS` | No       | Comma-separated list of member names (see [Team Members](#team-members)). Defaults to an empty list.               | `Alice Doe, Bob Smith` |
+| `TEAM_MEMBERS` | No       | Comma-separated list of member names (see [Team Members](#team-members)). Defaults to an empty list.               | `Alice DOE, Bob SMITH` |
 
 A complete example that sets both variables:
 
 ```bash
-TEAM_ID=east-1 TEAM_MEMBERS="Alice Doe, Bob Smith" go run main.go
+TEAM_ID=east-1 TEAM_MEMBERS="Alice DOE, Bob SMITH" go run main.go
 ```
 
 The two sections below explain each variable in detail.
@@ -44,14 +42,15 @@ The value is echoed back in the response as `team`, used to build the `k8s_label
 `TEAM_MEMBERS` is **optional** and complements `TEAM_ID` by naming who is on the team. It is a comma-separated list of names; surrounding whitespace is trimmed and empty entries are ignored:
 
 ```bash
-TEAM_ID=east-1 TEAM_MEMBERS="Alice Doe, Bob Smith" go run main.go
+TEAM_ID=east-1 TEAM_MEMBERS="Alice DOE, Bob SMITH" go run main.go
 ```
 
 The names are returned in the `members` array of the response. Unlike `TEAM_ID`, `TEAM_MEMBERS` is optional — when it is not set, `members` is an empty array (`[]`), never `null`, so consumers can always treat it as a list.
 
 ## Docker Repositories
 
-The server returns an array of Docker repositories supporting both monolithic and microservices architectures:
+The server returns an array of Docker repositories supporting both monolithic and microservices architectures by the classroom. They are team-specific repositories that you should use to push the Docker images of your team:
+
 - **Spring PetClinic Monolith** — Traditional monolithic architecture
 - **API Gateway** — Microservices entry point
 - **Customers Service** — Microservice for customer data
@@ -67,7 +66,10 @@ Example response:
 ```json
 {
   "team": "east-1",
-  "members": ["Alice Doe", "Bob Smith"],
+  "members": [
+    "Alice DOE",
+    "Bob SMITH"
+  ],
   "k8s_labels": {
     "team": "east-1"
   },
@@ -106,7 +108,7 @@ Example response:
 Released versions are published to Docker Hub as [`mincongclassroom/team-info-server`](https://hub.docker.com/r/mincongclassroom/team-info-server). The same [Core Configuration](#core-configuration) applies — pass the environment variables with `-e`:
 
 ```bash
-docker run -e TEAM_ID=east-1 -e TEAM_MEMBERS="Alice Doe, Bob Smith" -p 8090:8090 mincongclassroom/team-info-server
+docker run -e TEAM_ID=east-1 -e TEAM_MEMBERS="Alice DOE, Bob SMITH" -p 8090:8090 mincongclassroom/team-info-server
 ```
 
 The image is built from this repository. Its source and documentation always point back to [github.com/mincong-classroom/team-info-server](https://github.com/mincong-classroom/team-info-server).
