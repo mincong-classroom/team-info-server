@@ -11,29 +11,26 @@ This server is configured through environment variables. Here are the entries us
 
 | Variable       | Required | Description                                                                                                         | Example                |
 | -------------- | -------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `TEAM_ID`      | Yes      | Your team's identifier. Must match `{region}-{digit}` (see [Team ID](#team-id)). The server refuses to start without a valid value. | `east-1`               |
+| `TEAM_ID`      | Yes      | Your team's identifier: a single lowercase word, letters only (see [Team ID](#team-id)). The server refuses to start without a valid value. | `red`                  |
 | `TEAM_MEMBERS` | No       | Comma-separated list of member names (see [Team Members](#team-members)). Defaults to an empty list.               | `Alice DOE, Bob SMITH` |
 
 A complete example that sets both variables:
 
 ```bash
-TEAM_ID=east-1 TEAM_MEMBERS="Alice DOE, Bob SMITH" go run main.go
+TEAM_ID=red TEAM_MEMBERS="Alice DOE, Bob SMITH" go run main.go
 ```
 
 The two sections below explain each variable in detail.
 
 ### Team ID
 
-`TEAM_ID` is **required**. The server validates it against the format `{region}-{digit}`, where:
+`TEAM_ID` is **required**. It must be a **single lowercase word** — letters `a`–`z` only, with no digits, hyphens, underscores, spaces, or other characters.
 
-- **region**: One of `east`, `west`, `south`, or `north`
-- **digit**: A single digit from `0` to `9`
+Valid examples: `red`, `black`, `green`, `north`
 
-Valid examples: `east-1`, `west-2`, `south-0`, `north-9`
+Invalid examples: `Red` (uppercase), `red-team` (hyphen), `red_team` (underscore), `red1` (digit), `east-1` (the legacy 2025 `{region}-{digit}` format, no longer accepted)
 
-Invalid examples: `East-1`, `east-1-1`, `east-12`, `central-1`
-
-If `TEAM_ID` is missing or does not match this format, the server prints an error and exits. This is intentional: troubleshooting the missing variable and fixing it in the Kubernetes manifest is part of the exercise.
+If `TEAM_ID` is missing or does not match this rule, the server prints an error and exits. This is intentional: troubleshooting the missing variable and fixing it in the Kubernetes manifest is part of the exercise.
 
 The value is echoed back in the response as `team`, used to build the `k8s_labels`, and substituted into the Git and Docker repository URLs.
 
@@ -42,7 +39,7 @@ The value is echoed back in the response as `team`, used to build the `k8s_label
 `TEAM_MEMBERS` is **optional** and complements `TEAM_ID` by naming who is on the team. It is a comma-separated list of names; surrounding whitespace is trimmed and empty entries are ignored:
 
 ```bash
-TEAM_ID=east-1 TEAM_MEMBERS="Alice DOE, Bob SMITH" go run main.go
+TEAM_ID=red TEAM_MEMBERS="Alice DOE, Bob SMITH" go run main.go
 ```
 
 The names are returned in the `members` array of the response. Unlike `TEAM_ID`, `TEAM_MEMBERS` is optional — when it is not set, `members` is an empty array (`[]`), never `null`, so consumers can always treat it as a list.
@@ -59,45 +56,45 @@ The server returns an array of Docker repositories supporting both monolithic an
 Each repository is identified with:
 - `id`: Unique identifier
 - `name`: Human-readable name with team context
-- `repo_url`: Repository reference (e.g., `mincongclassroom/spring-petclinic-east-1`)
+- `repo_url`: Repository reference (e.g., `mincongclassroom/spring-petclinic-red`)
 - `web_url`: Full Docker Hub URL
 
 Example response:
 ```json
 {
-  "team": "east-1",
+  "team": "red",
   "members": [
     "Alice DOE",
     "Bob SMITH"
   ],
   "k8s_labels": {
-    "team": "east-1"
+    "team": "red"
   },
-  "git_repo": "https://github.com/mincong-classroom/k8s-east-1",
+  "git_repo": "https://github.com/mincong-classroom/k8s-red",
   "docker_repos": [
     {
-      "id": "spring-petclinic-east-1",
-      "name": "Spring PetClinic Monolith (east-1)",
-      "repo_url": "mincongclassroom/spring-petclinic-east-1",
-      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-east-1"
+      "id": "spring-petclinic-red",
+      "name": "Spring PetClinic Monolith (red)",
+      "repo_url": "mincongclassroom/spring-petclinic-red",
+      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-red"
     },
     {
-      "id": "spring-petclinic-api-gateway-east-1",
-      "name": "Spring PetClinic Microservices - API Gateway (east-1)",
-      "repo_url": "mincongclassroom/spring-petclinic-api-gateway-east-1",
-      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-api-gateway-east-1"
+      "id": "spring-petclinic-api-gateway-red",
+      "name": "Spring PetClinic Microservices - API Gateway (red)",
+      "repo_url": "mincongclassroom/spring-petclinic-api-gateway-red",
+      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-api-gateway-red"
     },
     {
-      "id": "spring-petclinic-customers-service-east-1",
-      "name": "Spring PetClinic Microservices - Customers Service (east-1)",
-      "repo_url": "mincongclassroom/spring-petclinic-customers-service-east-1",
-      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-customers-service-east-1"
+      "id": "spring-petclinic-customers-service-red",
+      "name": "Spring PetClinic Microservices - Customers Service (red)",
+      "repo_url": "mincongclassroom/spring-petclinic-customers-service-red",
+      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-customers-service-red"
     },
     {
-      "id": "spring-petclinic-vets-service-east-1",
-      "name": "Spring PetClinic Microservices - Veterinarians Service (east-1)",
-      "repo_url": "mincongclassroom/spring-petclinic-vets-service-east-1",
-      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-vets-service-east-1"
+      "id": "spring-petclinic-vets-service-red",
+      "name": "Spring PetClinic Microservices - Veterinarians Service (red)",
+      "repo_url": "mincongclassroom/spring-petclinic-vets-service-red",
+      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-vets-service-red"
     }
   ]
 }
@@ -108,7 +105,7 @@ Example response:
 Released versions are published to Docker Hub as [`mincongclassroom/team-info-server`](https://hub.docker.com/r/mincongclassroom/team-info-server). The same [Core Configuration](#core-configuration) applies — pass the environment variables with `-e`:
 
 ```bash
-docker run -e TEAM_ID=east-1 -e TEAM_MEMBERS="Alice DOE, Bob SMITH" -p 8090:8090 mincongclassroom/team-info-server
+docker run -e TEAM_ID=red -e TEAM_MEMBERS="Alice DOE, Bob SMITH" -p 8090:8090 mincongclassroom/team-info-server
 ```
 
 The image is built from this repository. Its source and documentation always point back to [github.com/mincong-classroom/team-info-server](https://github.com/mincong-classroom/team-info-server).

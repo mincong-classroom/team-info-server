@@ -23,13 +23,13 @@ go build
 ### Run
 ```bash
 # Requires TEAM_ID environment variable
-TEAM_ID=east-1 go run main.go
+TEAM_ID=red go run main.go
 
 # Optionally set TEAM_MEMBERS (comma-separated)
-TEAM_ID=east-1 TEAM_MEMBERS="Alice Doe, Bob Smith" go run main.go
+TEAM_ID=red TEAM_MEMBERS="Alice Doe, Bob Smith" go run main.go
 
 # Or run the built binary
-TEAM_ID=east-1 ./bin/server
+TEAM_ID=red ./bin/server
 ```
 
 ### Test
@@ -50,7 +50,7 @@ go test -run TestTeamInfoHandler
 docker build -t team-info-server .
 
 # Run container
-docker run -e TEAM_ID=east-1 -p 8090:8090 team-info-server
+docker run -e TEAM_ID=red -p 8090:8090 team-info-server
 ```
 
 **Multi-platform builds** are enabled in GitHub Actions CI/CD. The workflow always builds images for `linux/amd64` and `linux/arm64` platforms, but only pushes to Docker Hub when you push a Git tag in the year.release format.
@@ -111,10 +111,9 @@ Note: the env var keys use the `TEAM_` prefix (`TEAM_ID`, `TEAM_MEMBERS`), but t
 - `TEAM_MEMBERS` (optional): Comma-separated team member names (e.g. `"Alice Doe, Bob Smith"`). Whitespace around each name is trimmed and empty entries are dropped. When unset, `members` is an empty array (`[]`), never `null`, so the field is always safe to treat as an array. Parsed by `parseMembers` in `main.go`.
 
 **Valid TEAM_ID Values**:
-- Student teams: `{region}-{digit}` format (e.g., `east-1`, `west-2`, `south-0`, `north-9`)
-  - Regions: east, west, south, north
-  - Digit: 0-9
-- Reserved: `teacher` — For instructor-only access (not documented in README)
+- A single lowercase word — letters `a`–`z` only, no digits, hyphens, underscores, or spaces (e.g., `red`, `black`, `green`). Validated by `teamPattern` (`^[a-z]+$`) in `main.go`.
+- `teacher` is used for instructor-only access. It is no longer special-cased in code (it passes the general rule like any other word) and is intentionally not documented in the README.
+- The previous 2025 `{region}-{digit}` format (e.g., `east-1`) is no longer accepted.
 
 ### Key Design Decisions
 
