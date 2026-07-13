@@ -4,13 +4,26 @@ Team Info Server is a simple web server that returns team metadata in JSON forma
 
 ## Team Validation
 
-The server expects the `TEAM` environment variable to be set with the format `{region}-{digit}`, where:
+The server expects the `TEAM_ID` environment variable to be set with the format `{region}-{digit}`, where:
 - **region**: One of `east`, `west`, `south`, or `north`
 - **digit**: A single digit from 0-9
 
 Valid examples: `east-1`, `west-2`, `south-0`, `north-9`
 
 Invalid examples: `East-1`, `east-1-1`, `east-12`, `central-1`
+
+## Team Members
+
+The server optionally reads the `TEAM_MEMBERS` environment variable to expose who is on
+the team. It is a comma-separated list of names; surrounding whitespace is trimmed
+and empty entries are ignored:
+
+```bash
+TEAM_ID=east-1 TEAM_MEMBERS="Alice Doe, Bob Smith" go run main.go
+```
+
+The names are returned in the `members` array of the response. Unlike `TEAM_ID`,
+`TEAM_MEMBERS` is optional — when it is not set, the field is an empty array (`[]`).
 
 ## Docker Repositories
 
@@ -30,6 +43,7 @@ Example response:
 ```json
 {
   "team": "east-1",
+  "members": ["Alice Doe", "Bob Smith"],
   "k8s_labels": {
     "team": "east-1"
   },

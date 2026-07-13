@@ -22,11 +22,14 @@ go build
 
 ### Run
 ```bash
-# Requires TEAM environment variable
-TEAM=east-1 go run main.go
+# Requires TEAM_ID environment variable
+TEAM_ID=east-1 go run main.go
+
+# Optionally set TEAM_MEMBERS (comma-separated)
+TEAM_ID=east-1 TEAM_MEMBERS="Alice Doe, Bob Smith" go run main.go
 
 # Or run the built binary
-TEAM=east-1 ./bin/server
+TEAM_ID=east-1 ./bin/server
 ```
 
 ### Test
@@ -47,7 +50,7 @@ go test -run TestTeamInfoHandler
 docker build -t team-info-server .
 
 # Run container
-docker run -e TEAM=east-1 -p 8090:8090 team-info-server
+docker run -e TEAM_ID=east-1 -p 8090:8090 team-info-server
 ```
 
 **Multi-platform builds** are enabled in GitHub Actions CI/CD. The workflow always builds images for `linux/amd64` and `linux/arm64` platforms, but only pushes to Docker Hub when you push a Git tag in the year.release format.
@@ -89,17 +92,25 @@ Tests use table-driven testing pattern to cover multiple team values.
 **HTTP Server Structure**:
 - Single root handler (`/`) that accepts all HTTP methods
 - Returns JSON response with `TeamInfo` struct containing:
-  - `team`: The team identifier from TEAM env var
+  - `team`: The team identifier from the TEAM_ID env var
+  - `members`: Team member names from the TEAM_MEMBERS env var (array, may be empty)
   - `k8s_labels`: Kubernetes labels as a map
   - `git_repo`: Constructed GitHub URL
   - `docker_repos`: Constructed Docker Hub URLs (array)
 
-**Startup Flow**:
-1. Validates required `TEAM` environment variable (exits if missing - intentional for teaching)
-2. Sets up HTTP handler
-3. Starts server on port 8090
+Note: the env var keys use the `TEAM_` prefix (`TEAM_ID`, `TEAM_MEMBERS`), but the JSON response keys remain `team` and `members` (consumed by the downstream ESIGELEC About page).
 
-**Valid TEAM Values**:
+**Startup Flow**:
+1. Validates required `TEAM_ID` environment variable (exits if missing - intentional for teaching)
+2. Parses optional `TEAM_MEMBERS` environment variable (comma-separated)
+3. Sets up HTTP handler
+4. Starts server on port 8090
+
+**Environment Variables**:
+- `TEAM_ID` (required): Team identifier, validated against the format below. Missing/invalid value exits the process.
+- `TEAM_MEMBERS` (optional): Comma-separated team member names (e.g. `"Alice Doe, Bob Smith"`). Whitespace around each name is trimmed and empty entries are dropped. When unset, `members` is an empty array (`[]`), never `null`, so the field is always safe to treat as an array. Parsed by `parseMembers` in `main.go`.
+
+**Valid TEAM_ID Values**:
 - Student teams: `{region}-{digit}` format (e.g., `east-1`, `west-2`, `south-0`, `north-9`)
   - Regions: east, west, south, north
   - Digit: 0-9
@@ -110,7 +121,7 @@ Tests use table-driven testing pattern to cover multiple team values.
 - **Lightweight**: Uses only Go standard library, no external dependencies
 - **Scratch Image**: Docker image uses `scratch` base for minimal size, not suitable for debugging/shell access
 - **Port 8090**: Avoids conflict with Spring PetClinic on port 8080
-- **Intentional Error**: Missing TEAM env var causes exit - students must fix this in Kubernetes manifests
+- **Intentional Error**: Missing TEAM_ID env var causes exit - students must fix this in Kubernetes manifests
 
 ## Development Notes
 

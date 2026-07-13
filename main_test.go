@@ -5,41 +5,50 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
 func TestTeamInfoHandler(t *testing.T) {
 	tests := []struct {
-		name               string
-		teamValue          string
-		wantCode           int
-		wantTeam           string
-		wantGit            string
+		name                string
+		teamValue           string
+		membersValue        []string
+		wantCode            int
+		wantTeam            string
+		wantGit             string
 		wantDockerRepoCount int
+		wantMembers         []string
 	}{
 		{
-			name:               "standard team",
-			teamValue:          "east-1",
-			wantCode:           http.StatusOK,
-			wantTeam:           "east-1",
-			wantGit:            "https://github.com/mincong-classroom/k8s-east-1",
+			name:                "standard team",
+			teamValue:           "east-1",
+			membersValue:        []string{"Alice Doe", "Bob Smith"},
+			wantCode:            http.StatusOK,
+			wantTeam:            "east-1",
+			wantGit:             "https://github.com/mincong-classroom/k8s-east-1",
 			wantDockerRepoCount: 4,
+			wantMembers:         []string{"Alice Doe", "Bob Smith"},
 		},
 		{
-			name:               "different team",
-			teamValue:          "west-2",
-			wantCode:           http.StatusOK,
-			wantTeam:           "west-2",
-			wantGit:            "https://github.com/mincong-classroom/k8s-west-2",
+			name:                "different team",
+			teamValue:           "west-2",
+			membersValue:        []string{},
+			wantCode:            http.StatusOK,
+			wantTeam:            "west-2",
+			wantGit:             "https://github.com/mincong-classroom/k8s-west-2",
 			wantDockerRepoCount: 4,
+			wantMembers:         []string{},
 		},
 		{
-			name:               "teacher",
-			teamValue:          "teacher",
-			wantCode:           http.StatusOK,
-			wantTeam:           "teacher",
-			wantGit:            "https://github.com/mincong-classroom/k8s-teacher",
+			name:                "teacher",
+			teamValue:           "teacher",
+			membersValue:        []string{"Mincong Huang"},
+			wantCode:            http.StatusOK,
+			wantTeam:            "teacher",
+			wantGit:             "https://github.com/mincong-classroom/k8s-teacher",
 			wantDockerRepoCount: 4,
+			wantMembers:         []string{"Mincong Huang"},
 		},
 	}
 
@@ -48,7 +57,8 @@ func TestTeamInfoHandler(t *testing.T) {
 			// Create handler with specific team value
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				info := TeamInfo{
-					Team: tt.teamValue,
+					Team:    tt.teamValue,
+					Members: tt.membersValue,
 					K8sLabels: map[string]string{
 						"team": tt.teamValue,
 					},
@@ -125,7 +135,102 @@ func TestTeamInfoHandler(t *testing.T) {
 			if info.K8sLabels["team"] != tt.wantTeam {
 				t.Errorf("k8s_labels.team = %s, want %s", info.K8sLabels["team"], tt.wantTeam)
 			}
+
+			// Check members
+			if len(info.Members) != len(tt.wantMembers) {
+				t.Errorf("members count = %d, want %d", len(info.Members), len(tt.wantMembers))
+			}
+			for i := range tt.wantMembers {
+				if i < len(info.Members) && info.Members[i] != tt.wantMembers[i] {
+					t.Errorf("members[%d] = %q, want %q", i, info.Members[i], tt.wantMembers[i])
+				}
+			}
 		})
+	}
+}
+
+func TestParseMembers(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+		want  []string
+	}{
+		{
+			name:  "empty string yields empty slice",
+			value: "",
+			want:  []string{},
+		},
+		{
+			name:  "single member",
+			value: "Alice Doe",
+			want:  []string{"Alice Doe"},
+		},
+		{
+			name:  "multiple members",
+			value: "Alice Doe,Bob Smith",
+			want:  []string{"Alice Doe", "Bob Smith"},
+		},
+		{
+			name:  "trims surrounding whitespace",
+			value: " Alice Doe ,  Bob Smith ",
+			want:  []string{"Alice Doe", "Bob Smith"},
+		},
+		{
+			name:  "drops empty entries and trailing comma",
+			value: "Alice Doe,,Bob Smith,",
+			want:  []string{"Alice Doe", "Bob Smith"},
+		},
+		{
+			name:  "whitespace-only yields empty slice",
+			value: "  ,  ",
+			want:  []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseMembers(tt.value)
+
+			// A non-nil slice guarantees the JSON response is "[]" rather than "null".
+			if got == nil {
+				t.Fatalf("parseMembers(%q) returned nil, want non-nil slice", tt.value)
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("parseMembers(%q) = %v, want %v", tt.value, got, tt.want)
+			}
+			for i := range tt.want {
+				if got[i] != tt.want[i] {
+					t.Errorf("parseMembers(%q)[%d] = %q, want %q", tt.value, i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestMembersJSONMarshaling(t *testing.T) {
+	// Empty members must marshal as an empty array, not null, so consumers can
+	// safely treat the field as an array.
+	empty := TeamInfo{Team: "east-1", Members: parseMembers("")}
+	data, err := json.Marshal(empty)
+	if err != nil {
+		t.Fatalf("failed to marshal TeamInfo: %v", err)
+	}
+	if !strings.Contains(string(data), `"members":[]`) {
+		t.Errorf("expected empty members to marshal as [], got %s", data)
+	}
+
+	// Populated members round-trip correctly.
+	populated := TeamInfo{Team: "east-1", Members: []string{"Alice Doe", "Bob Smith"}}
+	data, err = json.Marshal(populated)
+	if err != nil {
+		t.Fatalf("failed to marshal TeamInfo: %v", err)
+	}
+	var unmarshaled TeamInfo
+	if err := json.Unmarshal(data, &unmarshaled); err != nil {
+		t.Fatalf("failed to unmarshal TeamInfo: %v", err)
+	}
+	if len(unmarshaled.Members) != 2 || unmarshaled.Members[0] != "Alice Doe" || unmarshaled.Members[1] != "Bob Smith" {
+		t.Errorf("unmarshaled members = %v, want [Alice Doe Bob Smith]", unmarshaled.Members)
 	}
 }
 
