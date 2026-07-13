@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 )
 
 const port = "8090" // avoids conflicts with the Spring PetClinic app (8080)
@@ -19,8 +20,24 @@ func validateTeam(team string) error {
 	return fmt.Errorf("invalid team format: %q. Expected format: {region}-{digit} where region is one of: east, west, south, north", team)
 }
 
+// parseMembers turns the comma-separated TEAM_MEMBERS env var into a slice of names.
+// Surrounding whitespace is trimmed and empty entries are dropped, so values
+// like "Alice Doe, Bob Smith," yield ["Alice Doe", "Bob Smith"]. It always
+// returns a non-nil slice so the JSON response renders an empty array (not
+// null) when no members are configured.
+func parseMembers(value string) []string {
+	members := []string{}
+	for _, part := range strings.Split(value, ",") {
+		if name := strings.TrimSpace(part); name != "" {
+			members = append(members, name)
+		}
+	}
+	return members
+}
+
 type TeamInfo struct {
 	Team        string            `json:"team"`
+	Members     []string          `json:"members"`
 	K8sLabels   map[string]string `json:"k8s_labels"`
 	GitRepo     string            `json:"git_repo"`
 	DockerRepos []DockerRepo      `json:"docker_repos"`
@@ -38,13 +55,13 @@ func main() {
 
 	fmt.Println("Validating environment variables...")
 	var team string
-	if value, ok := os.LookupEnv("TEAM"); ok {
+	if value, ok := os.LookupEnv("TEAM_ID"); ok {
 		team = value
 	}
 	if team == "" {
 		// This is intentional to let students practice troubleshooting errors in Kubernetes and
 		// setting environment variables in the manifest.
-		fmt.Printf("Environment variable %q is not set\n", "TEAM")
+		fmt.Printf("Environment variable %q is not set\n", "TEAM_ID")
 		fmt.Println("Exiting...")
 		os.Exit(1)
 	}
@@ -55,11 +72,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	// TEAM_MEMBERS is optional (comma-separated). Unlike TEAM_ID, a missing value
+	// is not an error: the response simply reports an empty members list.
+	members := parseMembers(os.Getenv("TEAM_MEMBERS"))
+	fmt.Printf("Team members: %v\n", members)
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Received %s request to %s\n", r.Method, r.URL.Path)
 
 		info := TeamInfo{
-			Team: team,
+			Team:    team,
+			Members: members,
 			K8sLabels: map[string]string{
 				"team": team,
 			},
