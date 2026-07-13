@@ -11,13 +11,16 @@ import (
 
 const port = "8090" // avoids conflicts with the Spring PetClinic app (8080)
 
-var teamPattern = regexp.MustCompile(`^(east|west|south|north)-[0-9]$`)
+// teamPattern matches a team identifier: a single lowercase word made of letters
+// only, with no digits, hyphens, underscores, or other characters (e.g. "red",
+// "black", "teacher").
+var teamPattern = regexp.MustCompile(`^[a-z]+$`)
 
 func validateTeam(team string) error {
-	if team == "teacher" || teamPattern.MatchString(team) {
+	if teamPattern.MatchString(team) {
 		return nil
 	}
-	return fmt.Errorf("invalid team format: %q. Expected format: {region}-{digit} where region is one of: east, west, south, north", team)
+	return fmt.Errorf("invalid team format: %q. Expected a single lowercase word with letters only, e.g. \"red\" or \"black\"", team)
 }
 
 // parseMembers turns the comma-separated TEAM_MEMBERS env var into a slice of names.
@@ -89,14 +92,14 @@ func main() {
 			GitRepo: fmt.Sprintf("https://github.com/mincong-classroom/k8s-%s", team),
 			DockerRepos: []DockerRepo{
 				{
-					Id:      fmt.Sprintf("spring-petclinic-%s", team),            // ex: "spring-petclinic-east-1"
-					Name:    fmt.Sprintf("Spring PetClinic Monolith (%s)", team), // ex: "Spring PetClinic Monolith (east-1)"
+					Id:      fmt.Sprintf("spring-petclinic-%s", team),            // ex: "spring-petclinic-red"
+					Name:    fmt.Sprintf("Spring PetClinic Monolith (%s)", team), // ex: "Spring PetClinic Monolith (red)"
 					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-%s", team),
 					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-%s", team),
 				},
 				{
-					Id:      fmt.Sprintf("spring-petclinic-api-gateway-%s", team),                   // ex: "spring-petclinic-api-gateway-east-1"
-					Name:    fmt.Sprintf("Spring PetClinic Microservices - API Gateway (%s)", team), // ex: "Spring PetClinic Microservices - API Gateway (east-1)"
+					Id:      fmt.Sprintf("spring-petclinic-api-gateway-%s", team),                   // ex: "spring-petclinic-api-gateway-red"
+					Name:    fmt.Sprintf("Spring PetClinic Microservices - API Gateway (%s)", team), // ex: "Spring PetClinic Microservices - API Gateway (red)"
 					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-api-gateway-%s", team),
 					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-api-gateway-%s", team),
 				},

@@ -22,21 +22,21 @@ func TestTeamInfoHandler(t *testing.T) {
 	}{
 		{
 			name:                "standard team",
-			teamValue:           "east-1",
+			teamValue:           "red",
 			membersValue:        []string{"Alice Doe", "Bob Smith"},
 			wantCode:            http.StatusOK,
-			wantTeam:            "east-1",
-			wantGit:             "https://github.com/mincong-classroom/k8s-east-1",
+			wantTeam:            "red",
+			wantGit:             "https://github.com/mincong-classroom/k8s-red",
 			wantDockerRepoCount: 4,
 			wantMembers:         []string{"Alice Doe", "Bob Smith"},
 		},
 		{
 			name:                "different team",
-			teamValue:           "west-2",
+			teamValue:           "black",
 			membersValue:        []string{},
 			wantCode:            http.StatusOK,
-			wantTeam:            "west-2",
-			wantGit:             "https://github.com/mincong-classroom/k8s-west-2",
+			wantTeam:            "black",
+			wantGit:             "https://github.com/mincong-classroom/k8s-black",
 			wantDockerRepoCount: 4,
 			wantMembers:         []string{},
 		},
@@ -210,7 +210,7 @@ func TestParseMembers(t *testing.T) {
 func TestMembersJSONMarshaling(t *testing.T) {
 	// Empty members must marshal as an empty array, not null, so consumers can
 	// safely treat the field as an array.
-	empty := TeamInfo{Team: "east-1", Members: parseMembers("")}
+	empty := TeamInfo{Team: "red", Members: parseMembers("")}
 	data, err := json.Marshal(empty)
 	if err != nil {
 		t.Fatalf("failed to marshal TeamInfo: %v", err)
@@ -220,7 +220,7 @@ func TestMembersJSONMarshaling(t *testing.T) {
 	}
 
 	// Populated members round-trip correctly.
-	populated := TeamInfo{Team: "east-1", Members: []string{"Alice Doe", "Bob Smith"}}
+	populated := TeamInfo{Team: "red", Members: []string{"Alice Doe", "Bob Smith"}}
 	data, err = json.Marshal(populated)
 	if err != nil {
 		t.Fatalf("failed to marshal TeamInfo: %v", err)
@@ -236,9 +236,9 @@ func TestMembersJSONMarshaling(t *testing.T) {
 
 func TestTeamInfoStructure(t *testing.T) {
 	info := TeamInfo{
-		Team: "test-team",
+		Team: "red",
 		K8sLabels: map[string]string{
-			"team": "test-team",
+			"team": "red",
 		},
 		GitRepo: "https://example.com/repo",
 		DockerRepos: []DockerRepo{
@@ -278,71 +278,66 @@ func TestValidateTeam(t *testing.T) {
 		teamValue string
 		wantError bool
 	}{
-		// Valid formats
+		// Valid: a single lowercase word made of letters only.
 		{
-			name:      "valid east-1",
-			teamValue: "east-1",
+			name:      "valid single word red",
+			teamValue: "red",
 			wantError: false,
 		},
 		{
-			name:      "valid west-2",
-			teamValue: "west-2",
+			name:      "valid single word black",
+			teamValue: "black",
 			wantError: false,
 		},
 		{
-			name:      "valid south-0",
-			teamValue: "south-0",
+			name:      "valid single letter",
+			teamValue: "a",
 			wantError: false,
 		},
 		{
-			name:      "valid north-9",
-			teamValue: "north-9",
-			wantError: false,
-		},
-		{
-			name:      "valid teacher",
+			name:      "valid reserved teacher",
 			teamValue: "teacher",
 			wantError: false,
 		},
-		// Invalid formats
+		// Invalid: anything that is not a single lowercase word.
 		{
-			name:      "invalid uppercase region",
-			teamValue: "East-1",
+			name:      "invalid legacy region-digit format",
+			teamValue: "east-1",
 			wantError: true,
 		},
 		{
-			name:      "invalid space in format",
-			teamValue: "East 1",
+			name:      "invalid capitalized word",
+			teamValue: "Red",
 			wantError: true,
 		},
 		{
-			name:      "invalid space without dash",
-			teamValue: "east 1",
+			name:      "invalid all uppercase",
+			teamValue: "RED",
 			wantError: true,
 		},
 		{
-			name:      "invalid extra digits",
-			teamValue: "east-12",
+			name:      "invalid hyphen",
+			teamValue: "red-team",
 			wantError: true,
 		},
 		{
-			name:      "invalid multiple dashes",
-			teamValue: "east-1-1",
+			name:      "invalid underscore",
+			teamValue: "red_team",
 			wantError: true,
 		},
 		{
-			name:      "invalid region",
-			teamValue: "central-1",
+			name:      "invalid trailing digit",
+			teamValue: "red1",
 			wantError: true,
 		},
 		{
-			name:      "invalid no digit",
-			teamValue: "east-",
+			name:      "invalid internal space",
+			teamValue: "red team",
 			wantError: true,
 		},
 		{
-			name:      "invalid no region",
-			teamValue: "-1",
+			name:      "invalid empty string",
+			teamValue: "",
 			wantError: true,
 		},
 	}
@@ -358,7 +353,7 @@ func TestValidateTeam(t *testing.T) {
 }
 
 func TestDockerReposStructure(t *testing.T) {
-	teamValue := "east-1"
+	teamValue := "red"
 	repos := []DockerRepo{
 		{
 			Id:      fmt.Sprintf("spring-petclinic-%s", teamValue),
@@ -387,17 +382,17 @@ func TestDockerReposStructure(t *testing.T) {
 	}
 
 	expectedIds := []string{
-		"spring-petclinic-east-1",
-		"spring-petclinic-api-gateway-east-1",
-		"spring-petclinic-customers-service-east-1",
-		"spring-petclinic-vets-service-east-1",
+		"spring-petclinic-red",
+		"spring-petclinic-api-gateway-red",
+		"spring-petclinic-customers-service-red",
+		"spring-petclinic-vets-service-red",
 	}
 
 	expectedNames := []string{
-		"Spring PetClinic Monolith (east-1)",
-		"Spring PetClinic Microservices - API Gateway (east-1)",
-		"Spring PetClinic Microservices - Customers Service (east-1)",
-		"Spring PetClinic Microservices - Veterinarians Service (east-1)",
+		"Spring PetClinic Monolith (red)",
+		"Spring PetClinic Microservices - API Gateway (red)",
+		"Spring PetClinic Microservices - Customers Service (red)",
+		"Spring PetClinic Microservices - Veterinarians Service (red)",
 	}
 
 	// Check count
@@ -429,33 +424,33 @@ func TestDockerReposURLFormatting(t *testing.T) {
 		expectedRepos []string
 	}{
 		{
-			name:      "team east-1",
-			teamValue: "east-1",
+			name:      "team red",
+			teamValue: "red",
 			expectedRepos: []string{
-				"mincongclassroom/spring-petclinic-east-1",
-				"mincongclassroom/spring-petclinic-api-gateway-east-1",
-				"mincongclassroom/spring-petclinic-customers-service-east-1",
-				"mincongclassroom/spring-petclinic-vets-service-east-1",
+				"mincongclassroom/spring-petclinic-red",
+				"mincongclassroom/spring-petclinic-api-gateway-red",
+				"mincongclassroom/spring-petclinic-customers-service-red",
+				"mincongclassroom/spring-petclinic-vets-service-red",
 			},
 		},
 		{
-			name:      "team west-5",
-			teamValue: "west-5",
+			name:      "team black",
+			teamValue: "black",
 			expectedRepos: []string{
-				"mincongclassroom/spring-petclinic-west-5",
-				"mincongclassroom/spring-petclinic-api-gateway-west-5",
-				"mincongclassroom/spring-petclinic-customers-service-west-5",
-				"mincongclassroom/spring-petclinic-vets-service-west-5",
+				"mincongclassroom/spring-petclinic-black",
+				"mincongclassroom/spring-petclinic-api-gateway-black",
+				"mincongclassroom/spring-petclinic-customers-service-black",
+				"mincongclassroom/spring-petclinic-vets-service-black",
 			},
 		},
 		{
-			name:      "team south-0",
-			teamValue: "south-0",
+			name:      "team green",
+			teamValue: "green",
 			expectedRepos: []string{
-				"mincongclassroom/spring-petclinic-south-0",
-				"mincongclassroom/spring-petclinic-api-gateway-south-0",
-				"mincongclassroom/spring-petclinic-customers-service-south-0",
-				"mincongclassroom/spring-petclinic-vets-service-south-0",
+				"mincongclassroom/spring-petclinic-green",
+				"mincongclassroom/spring-petclinic-api-gateway-green",
+				"mincongclassroom/spring-petclinic-customers-service-green",
+				"mincongclassroom/spring-petclinic-vets-service-green",
 			},
 		},
 	}
@@ -510,17 +505,17 @@ func TestDockerReposURLFormatting(t *testing.T) {
 
 func TestDockerReposJSONMarshaling(t *testing.T) {
 	info := TeamInfo{
-		Team: "east-1",
+		Team: "red",
 		K8sLabels: map[string]string{
-			"team": "east-1",
+			"team": "red",
 		},
-		GitRepo: "https://github.com/mincong-classroom/k8s-east-1",
+		GitRepo: "https://github.com/mincong-classroom/k8s-red",
 		DockerRepos: []DockerRepo{
 			{
-				Id:      "spring-petclinic-east-1",
-				Name:    "Spring PetClinic Monolith (east-1)",
-				RepoUrl: "mincongclassroom/spring-petclinic-east-1",
-				WebUrl:  "https://hub.docker.com/r/mincongclassroom/spring-petclinic-east-1",
+				Id:      "spring-petclinic-red",
+				Name:    "Spring PetClinic Monolith (red)",
+				RepoUrl: "mincongclassroom/spring-petclinic-red",
+				WebUrl:  "https://hub.docker.com/r/mincongclassroom/spring-petclinic-red",
 			},
 		},
 	}
@@ -542,11 +537,11 @@ func TestDockerReposJSONMarshaling(t *testing.T) {
 		t.Errorf("unmarshaled docker_repos count = %d, want 1", len(unmarshaled.DockerRepos))
 	}
 
-	if unmarshaled.DockerRepos[0].Id != "spring-petclinic-east-1" {
-		t.Errorf("unmarshaled docker_repos[0].id = %q, want %q", unmarshaled.DockerRepos[0].Id, "spring-petclinic-east-1")
+	if unmarshaled.DockerRepos[0].Id != "spring-petclinic-red" {
+		t.Errorf("unmarshaled docker_repos[0].id = %q, want %q", unmarshaled.DockerRepos[0].Id, "spring-petclinic-red")
 	}
 
-	if unmarshaled.DockerRepos[0].Name != "Spring PetClinic Monolith (east-1)" {
-		t.Errorf("unmarshaled docker_repos[0].name = %q, want %q", unmarshaled.DockerRepos[0].Name, "Spring PetClinic Monolith (east-1)")
+	if unmarshaled.DockerRepos[0].Name != "Spring PetClinic Monolith (red)" {
+		t.Errorf("unmarshaled docker_repos[0].name = %q, want %q", unmarshaled.DockerRepos[0].Name, "Spring PetClinic Monolith (red)")
 	}
 }
