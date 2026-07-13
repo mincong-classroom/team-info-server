@@ -144,3 +144,7 @@ When updating the Go version, update all of these files:
 **Multi-platform builds:** The workflow uses `docker/setup-buildx-action@v3` to enable multi-platform Docker builds for linux/amd64 and linux/arm64. This step must come before `docker/build-push-action` to support multi-platform builds (the default docker driver does not support this).
 
 **Docker build caching:** Do not add `cache-from` or `cache-to` options to `docker/build-push-action`. The GitHub Actions docker driver does not support cache export and raises "Cache export is not supported for the docker driver" error. Build optimization is not a priority at this stage.
+
+**Docker Hub description sync:** On a published tag, the workflow runs `peter-evans/dockerhub-description` to upload `README.md` as the Docker Hub full description for `mincongclassroom/team-info-server` (and set a short description). This keeps the registry page and the GitHub README in sync so students find the same configuration docs on either side. It reuses the existing `DOCKER_USERNAME` / `DOCKER_PASSWORD` secrets and only runs when `steps.publish.outputs.should_push == 'true'`.
+
+**OCI image labels:** The `Dockerfile` declares `org.opencontainers.image.*` labels (source, documentation, url, description, licenses) so the published image points back to this repository. Registries surface `org.opencontainers.image.source` as the linked source repo. In CI, `docker/metadata-action` also injects dynamic labels; declaring the static ones in the `Dockerfile` keeps local `docker build` output self-describing too.
