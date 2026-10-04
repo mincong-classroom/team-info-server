@@ -59,7 +59,6 @@ jobs:
           tags: |
             type=raw,value=${{ steps.publish.outputs.version }},enable=${{ steps.publish.outputs.should_push == 'true' }}
             type=raw,value=latest,enable=${{ steps.publish.outputs.should_push == 'true' && steps.publish.outputs.is_release_candidate == 'false' }}
-            type=sha
       - name: Build and push Docker image
         id: build
         uses: docker/build-push-action@v7
