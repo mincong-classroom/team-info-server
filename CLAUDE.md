@@ -69,11 +69,10 @@ docker run -e TEAM_ID=red -p 8090:8090 team-info-server
 - On release tag (e.g., `v2026.0`): Builds and pushes to Docker Hub with tags:
   - Version tag (e.g., `2026.0`)
   - `latest`
-  - `sha-abc123def` (commit reference)
 - On release candidate tag (e.g., `v2026.0-rc1`): Builds and pushes to Docker Hub with tags:
   - Version tag (e.g., `2026.0-rc1`)
-  - `sha-abc123def` (commit reference)
   - **Note:** `latest` tag is NOT updated for release candidates
+- No `sha-*` tag is published: the version tags are the only way to refer to an image
 
 ## Testing
 
