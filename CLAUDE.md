@@ -77,12 +77,11 @@ docker run -e TEAM_ID=red -p 8090:8090 team-info-server
 ## Testing
 
 The project includes unit tests in `main_test.go` that verify:
-- HTTP handler returns correct JSON response
-- Different team values are correctly formatted in git and docker repo URLs
-- K8s labels are properly set
+- The HTTP handler of `main.go`, `teamInfoHandler`, returns the whole expected JSON body, keys included, for several teams
+- `TEAM_ID` validation and `TEAM_MEMBERS` parsing
 - JSON marshaling/unmarshaling works correctly
 
-Tests use table-driven testing pattern to cover multiple team values.
+Tests use table-driven testing pattern to cover multiple team values. They call the code of `main.go` (`newTeamInfo`, `teamInfoHandler`), never a copy of it: a test that builds the expected response with the same code as `main.go` would pass whatever `main.go` does.
 
 ## Architecture
 
@@ -95,14 +94,14 @@ Tests use table-driven testing pattern to cover multiple team values.
   - `members`: Team member names from the TEAM_MEMBERS env var (array, may be empty)
   - `k8s_labels`: Kubernetes labels as a map
   - `git_repo`: Constructed GitHub URL
-  - `docker_repos`: Constructed Docker Hub URLs (array)
+  - `docker_repos`: Constructed Docker Hub URLs (array): the monolith of the team, `spring-petclinic-{team}`
 
 Note: the env var keys use the `TEAM_` prefix (`TEAM_ID`, `TEAM_MEMBERS`), but the JSON response keys remain `team` and `members` (consumed by the downstream ESIGELEC About page).
 
 **Startup Flow**:
 1. Validates required `TEAM_ID` environment variable (exits if missing - intentional for teaching)
 2. Parses optional `TEAM_MEMBERS` environment variable (comma-separated)
-3. Sets up HTTP handler
+3. Sets up the HTTP handler, `teamInfoHandler`, whose response `newTeamInfo` builds once
 4. Starts server on port 8090
 
 **Environment Variables**:
