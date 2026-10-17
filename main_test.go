@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,142 +11,101 @@ import (
 
 func TestTeamInfoHandler(t *testing.T) {
 	tests := []struct {
-		name                string
-		teamValue           string
-		membersValue        []string
-		wantCode            int
-		wantTeam            string
-		wantGit             string
-		wantDockerRepoCount int
-		wantMembers         []string
+		name     string
+		team     string
+		members  []string
+		wantBody string
 	}{
 		{
-			name:                "standard team",
-			teamValue:           "red",
-			membersValue:        []string{"Alice Doe", "Bob Smith"},
-			wantCode:            http.StatusOK,
-			wantTeam:            "red",
-			wantGit:             "https://github.com/mincong-classroom/k8s-red",
-			wantDockerRepoCount: 4,
-			wantMembers:         []string{"Alice Doe", "Bob Smith"},
+			name:    "team with members",
+			team:    "red",
+			members: []string{"Alice Doe", "Bob Smith"},
+			wantBody: `{
+				"team": "red",
+				"members": ["Alice Doe", "Bob Smith"],
+				"k8s_labels": {"team": "red"},
+				"git_repo": "https://github.com/mincong-classroom/k8s-red",
+				"docker_repos": [
+					{
+						"id": "spring-petclinic-red",
+						"name": "Spring PetClinic Monolith (red)",
+						"repo_url": "mincongclassroom/spring-petclinic-red",
+						"web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-red"
+					}
+				]
+			}`,
 		},
 		{
-			name:                "different team",
-			teamValue:           "black",
-			membersValue:        []string{},
-			wantCode:            http.StatusOK,
-			wantTeam:            "black",
-			wantGit:             "https://github.com/mincong-classroom/k8s-black",
-			wantDockerRepoCount: 4,
-			wantMembers:         []string{},
+			name:    "team without members",
+			team:    "black",
+			members: parseMembers(""),
+			wantBody: `{
+				"team": "black",
+				"members": [],
+				"k8s_labels": {"team": "black"},
+				"git_repo": "https://github.com/mincong-classroom/k8s-black",
+				"docker_repos": [
+					{
+						"id": "spring-petclinic-black",
+						"name": "Spring PetClinic Monolith (black)",
+						"repo_url": "mincongclassroom/spring-petclinic-black",
+						"web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-black"
+					}
+				]
+			}`,
 		},
 		{
-			name:                "teacher",
-			teamValue:           "teacher",
-			membersValue:        []string{"Mincong Huang"},
-			wantCode:            http.StatusOK,
-			wantTeam:            "teacher",
-			wantGit:             "https://github.com/mincong-classroom/k8s-teacher",
-			wantDockerRepoCount: 4,
-			wantMembers:         []string{"Mincong Huang"},
+			name:    "teacher",
+			team:    "teacher",
+			members: []string{"Mincong Huang"},
+			wantBody: `{
+				"team": "teacher",
+				"members": ["Mincong Huang"],
+				"k8s_labels": {"team": "teacher"},
+				"git_repo": "https://github.com/mincong-classroom/k8s-teacher",
+				"docker_repos": [
+					{
+						"id": "spring-petclinic-teacher",
+						"name": "Spring PetClinic Monolith (teacher)",
+						"repo_url": "mincongclassroom/spring-petclinic-teacher",
+						"web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-teacher"
+					}
+				]
+			}`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create handler with specific team value
-			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				info := TeamInfo{
-					Team:    tt.teamValue,
-					Members: tt.membersValue,
-					K8sLabels: map[string]string{
-						"team": tt.teamValue,
-					},
-					GitRepo: "https://github.com/mincong-classroom/k8s-" + tt.teamValue,
-					DockerRepos: []DockerRepo{
-						{
-							Id:      fmt.Sprintf("spring-petclinic-%s", tt.teamValue),
-							Name:    fmt.Sprintf("Spring PetClinic Monolith (%s)", tt.teamValue),
-							RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-%s", tt.teamValue),
-							WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-%s", tt.teamValue),
-						},
-						{
-							Id:      fmt.Sprintf("spring-petclinic-api-gateway-%s", tt.teamValue),
-							Name:    fmt.Sprintf("Spring PetClinic Microservices - API Gateway (%s)", tt.teamValue),
-							RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-api-gateway-%s", tt.teamValue),
-							WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-api-gateway-%s", tt.teamValue),
-						},
-						{
-							Id:      fmt.Sprintf("spring-petclinic-customers-service-%s", tt.teamValue),
-							Name:    fmt.Sprintf("Spring PetClinic Microservices - Customers Service (%s)", tt.teamValue),
-							RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-customers-service-%s", tt.teamValue),
-							WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-customers-service-%s", tt.teamValue),
-						},
-						{
-							Id:      fmt.Sprintf("spring-petclinic-vets-service-%s", tt.teamValue),
-							Name:    fmt.Sprintf("Spring PetClinic Microservices - Veterinarians Service (%s)", tt.teamValue),
-							RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-vets-service-%s", tt.teamValue),
-							WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-vets-service-%s", tt.teamValue),
-						},
-					},
-				}
-
-				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(info)
-			})
-
-			// Make request
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			w := httptest.NewRecorder()
-			handler.ServeHTTP(w, req)
+			teamInfoHandler(tt.team, tt.members).ServeHTTP(w, req)
 
-			// Check status code
-			if w.Code != tt.wantCode {
-				t.Errorf("status code = %d, want %d", w.Code, tt.wantCode)
+			if w.Code != http.StatusOK {
+				t.Errorf("status code = %d, want %d", w.Code, http.StatusOK)
 			}
 
-			// Check content type
 			if got := w.Header().Get("Content-Type"); got != "application/json" {
 				t.Errorf("Content-Type = %s, want application/json", got)
 			}
 
-			// Parse response
-			var info TeamInfo
-			if err := json.NewDecoder(w.Body).Decode(&info); err != nil {
-				t.Errorf("failed to decode response: %v", err)
-			}
-
-			// Check team value
-			if info.Team != tt.wantTeam {
-				t.Errorf("team = %s, want %s", info.Team, tt.wantTeam)
-			}
-
-			// Check git repo
-			if info.GitRepo != tt.wantGit {
-				t.Errorf("git_repo = %s, want %s", info.GitRepo, tt.wantGit)
-			}
-
-			// Check docker repos count
-			if len(info.DockerRepos) != tt.wantDockerRepoCount {
-				t.Errorf("docker_repos count = %d, want %d", len(info.DockerRepos), tt.wantDockerRepoCount)
-			}
-
-			// Check k8s labels
-			if info.K8sLabels["team"] != tt.wantTeam {
-				t.Errorf("k8s_labels.team = %s, want %s", info.K8sLabels["team"], tt.wantTeam)
-			}
-
-			// Check members
-			if len(info.Members) != len(tt.wantMembers) {
-				t.Errorf("members count = %d, want %d", len(info.Members), len(tt.wantMembers))
-			}
-			for i := range tt.wantMembers {
-				if i < len(info.Members) && info.Members[i] != tt.wantMembers[i] {
-					t.Errorf("members[%d] = %q, want %q", i, info.Members[i], tt.wantMembers[i])
-				}
+			// The whole body, keys included: the consumers of the response read them by name
+			if got, want := compactJSON(t, w.Body.String()), compactJSON(t, tt.wantBody); got != want {
+				t.Errorf("body = %s, want %s", got, want)
 			}
 		})
 	}
+}
+
+// compactJSON returns the JSON document s without its insignificant whitespace, so that two
+// documents compare as strings.
+func compactJSON(t *testing.T, s string) string {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := json.Compact(&buf, []byte(s)); err != nil {
+		t.Fatalf("json.Compact(%q) failed: %v", s, err)
+	}
+	return buf.String()
 }
 
 func TestParseMembers(t *testing.T) {
@@ -347,157 +306,6 @@ func TestValidateTeam(t *testing.T) {
 			err := validateTeam(tt.teamValue)
 			if (err != nil) != tt.wantError {
 				t.Errorf("validateTeam(%q) error = %v, wantError %v", tt.teamValue, err, tt.wantError)
-			}
-		})
-	}
-}
-
-func TestDockerReposStructure(t *testing.T) {
-	teamValue := "red"
-	repos := []DockerRepo{
-		{
-			Id:      fmt.Sprintf("spring-petclinic-%s", teamValue),
-			Name:    fmt.Sprintf("Spring PetClinic Monolith (%s)", teamValue),
-			RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-%s", teamValue),
-			WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-%s", teamValue),
-		},
-		{
-			Id:      fmt.Sprintf("spring-petclinic-api-gateway-%s", teamValue),
-			Name:    fmt.Sprintf("Spring PetClinic Microservices - API Gateway (%s)", teamValue),
-			RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-api-gateway-%s", teamValue),
-			WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-api-gateway-%s", teamValue),
-		},
-		{
-			Id:      fmt.Sprintf("spring-petclinic-customers-service-%s", teamValue),
-			Name:    fmt.Sprintf("Spring PetClinic Microservices - Customers Service (%s)", teamValue),
-			RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-customers-service-%s", teamValue),
-			WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-customers-service-%s", teamValue),
-		},
-		{
-			Id:      fmt.Sprintf("spring-petclinic-vets-service-%s", teamValue),
-			Name:    fmt.Sprintf("Spring PetClinic Microservices - Veterinarians Service (%s)", teamValue),
-			RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-vets-service-%s", teamValue),
-			WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-vets-service-%s", teamValue),
-		},
-	}
-
-	expectedIds := []string{
-		"spring-petclinic-red",
-		"spring-petclinic-api-gateway-red",
-		"spring-petclinic-customers-service-red",
-		"spring-petclinic-vets-service-red",
-	}
-
-	expectedNames := []string{
-		"Spring PetClinic Monolith (red)",
-		"Spring PetClinic Microservices - API Gateway (red)",
-		"Spring PetClinic Microservices - Customers Service (red)",
-		"Spring PetClinic Microservices - Veterinarians Service (red)",
-	}
-
-	// Check count
-	if len(repos) != 4 {
-		t.Errorf("expected 4 docker repos, got %d", len(repos))
-	}
-
-	// Check IDs and names
-	for i, repo := range repos {
-		if repo.Id != expectedIds[i] {
-			t.Errorf("repo[%d].Id = %q, want %q", i, repo.Id, expectedIds[i])
-		}
-		if repo.Name != expectedNames[i] {
-			t.Errorf("repo[%d].Name = %q, want %q", i, repo.Name, expectedNames[i])
-		}
-		if repo.RepoUrl == "" {
-			t.Errorf("repo[%d].RepoUrl is empty", i)
-		}
-		if repo.WebUrl == "" {
-			t.Errorf("repo[%d].WebUrl is empty", i)
-		}
-	}
-}
-
-func TestDockerReposURLFormatting(t *testing.T) {
-	tests := []struct {
-		name          string
-		teamValue     string
-		expectedRepos []string
-	}{
-		{
-			name:      "team red",
-			teamValue: "red",
-			expectedRepos: []string{
-				"mincongclassroom/spring-petclinic-red",
-				"mincongclassroom/spring-petclinic-api-gateway-red",
-				"mincongclassroom/spring-petclinic-customers-service-red",
-				"mincongclassroom/spring-petclinic-vets-service-red",
-			},
-		},
-		{
-			name:      "team black",
-			teamValue: "black",
-			expectedRepos: []string{
-				"mincongclassroom/spring-petclinic-black",
-				"mincongclassroom/spring-petclinic-api-gateway-black",
-				"mincongclassroom/spring-petclinic-customers-service-black",
-				"mincongclassroom/spring-petclinic-vets-service-black",
-			},
-		},
-		{
-			name:      "team green",
-			teamValue: "green",
-			expectedRepos: []string{
-				"mincongclassroom/spring-petclinic-green",
-				"mincongclassroom/spring-petclinic-api-gateway-green",
-				"mincongclassroom/spring-petclinic-customers-service-green",
-				"mincongclassroom/spring-petclinic-vets-service-green",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repos := []DockerRepo{
-				{
-					Id:      fmt.Sprintf("spring-petclinic-%s", tt.teamValue),
-					Name:    fmt.Sprintf("Spring PetClinic Monolith (%s)", tt.teamValue),
-					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-%s", tt.teamValue),
-					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-%s", tt.teamValue),
-				},
-				{
-					Id:      fmt.Sprintf("spring-petclinic-api-gateway-%s", tt.teamValue),
-					Name:    fmt.Sprintf("Spring PetClinic Microservices - API Gateway (%s)", tt.teamValue),
-					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-api-gateway-%s", tt.teamValue),
-					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-api-gateway-%s", tt.teamValue),
-				},
-				{
-					Id:      fmt.Sprintf("spring-petclinic-customers-service-%s", tt.teamValue),
-					Name:    fmt.Sprintf("Spring PetClinic Microservices - Customers Service (%s)", tt.teamValue),
-					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-customers-service-%s", tt.teamValue),
-					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-customers-service-%s", tt.teamValue),
-				},
-				{
-					Id:      fmt.Sprintf("spring-petclinic-vets-service-%s", tt.teamValue),
-					Name:    fmt.Sprintf("Spring PetClinic Microservices - Veterinarians Service (%s)", tt.teamValue),
-					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-vets-service-%s", tt.teamValue),
-					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-vets-service-%s", tt.teamValue),
-				},
-			}
-
-			if len(repos) != len(tt.expectedRepos) {
-				t.Errorf("repos count = %d, want %d", len(repos), len(tt.expectedRepos))
-			}
-
-			for i, repo := range repos {
-				if i < len(tt.expectedRepos) && repo.RepoUrl != tt.expectedRepos[i] {
-					t.Errorf("repos[%d].RepoUrl = %q, want %q", i, repo.RepoUrl, tt.expectedRepos[i])
-				}
-
-				// Verify WebUrl format is correct
-				expectedWebUrl := fmt.Sprintf("https://hub.docker.com/r/%s", repo.RepoUrl)
-				if repo.WebUrl != expectedWebUrl {
-					t.Errorf("repos[%d].WebUrl = %q, want %q", i, repo.WebUrl, expectedWebUrl)
-				}
 			}
 		})
 	}

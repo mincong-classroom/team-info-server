@@ -46,12 +46,9 @@ The names are returned in the `members` array of the response. Unlike `TEAM_ID`,
 
 ## Docker Repositories
 
-The server returns an array of Docker repositories supporting both monolithic and microservices architectures by the classroom. They are team-specific repositories that you should use to push the Docker images of your team:
+The server returns an array of Docker repositories: the team-specific repositories that you should use to push the Docker images of your team. There is one:
 
-- **Spring PetClinic Monolith** — Traditional monolithic architecture
-- **API Gateway** — Microservices entry point
-- **Customers Service** — Microservice for customer data
-- **Vets Service** — Microservice for veterinarian data
+- **Spring PetClinic Monolith** — the Spring PetClinic application, built as a single image
 
 Each repository is identified with:
 - `id`: Unique identifier
@@ -77,24 +74,6 @@ Example response:
       "name": "Spring PetClinic Monolith (red)",
       "repo_url": "mincongclassroom/spring-petclinic-red",
       "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-red"
-    },
-    {
-      "id": "spring-petclinic-api-gateway-red",
-      "name": "Spring PetClinic Microservices - API Gateway (red)",
-      "repo_url": "mincongclassroom/spring-petclinic-api-gateway-red",
-      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-api-gateway-red"
-    },
-    {
-      "id": "spring-petclinic-customers-service-red",
-      "name": "Spring PetClinic Microservices - Customers Service (red)",
-      "repo_url": "mincongclassroom/spring-petclinic-customers-service-red",
-      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-customers-service-red"
-    },
-    {
-      "id": "spring-petclinic-vets-service-red",
-      "name": "Spring PetClinic Microservices - Veterinarians Service (red)",
-      "repo_url": "mincongclassroom/spring-petclinic-vets-service-red",
-      "web_url": "https://hub.docker.com/r/mincongclassroom/spring-petclinic-vets-service-red"
     }
   ]
 }

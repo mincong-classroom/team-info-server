@@ -53,6 +53,41 @@ type DockerRepo struct {
 	WebUrl  string `json:"web_url"`
 }
 
+// newTeamInfo returns the metadata of a team: its Kubernetes labels, its Git repository, and the
+// Docker repositories that the team pushes its images to.
+func newTeamInfo(team string, members []string) TeamInfo {
+	return TeamInfo{
+		Team:    team,
+		Members: members,
+		K8sLabels: map[string]string{
+			"team": team,
+		},
+		GitRepo: fmt.Sprintf("https://github.com/mincong-classroom/k8s-%s", team),
+		DockerRepos: []DockerRepo{
+			{
+				Id:      fmt.Sprintf("spring-petclinic-%s", team),            // ex: "spring-petclinic-red"
+				Name:    fmt.Sprintf("Spring PetClinic Monolith (%s)", team), // ex: "Spring PetClinic Monolith (red)"
+				RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-%s", team),
+				WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-%s", team),
+			},
+		},
+	}
+}
+
+// teamInfoHandler answers every request with the metadata of the team, in JSON.
+func teamInfoHandler(team string, members []string) http.HandlerFunc {
+	info := newTeamInfo(team, members)
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Printf("Received %s request to %s\n", r.Method, r.URL.Path)
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(info); err != nil {
+			// The status is already sent: the client gets a truncated body, and the log says why.
+			fmt.Printf("Failed to write the response: %v\n", err)
+		}
+	}
+}
+
 func main() {
 	fmt.Println("Starting server...")
 
@@ -80,47 +115,7 @@ func main() {
 	members := parseMembers(os.Getenv("TEAM_MEMBERS"))
 	fmt.Printf("Team members: %v\n", members)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("Received %s request to %s\n", r.Method, r.URL.Path)
-
-		info := TeamInfo{
-			Team:    team,
-			Members: members,
-			K8sLabels: map[string]string{
-				"team": team,
-			},
-			GitRepo: fmt.Sprintf("https://github.com/mincong-classroom/k8s-%s", team),
-			DockerRepos: []DockerRepo{
-				{
-					Id:      fmt.Sprintf("spring-petclinic-%s", team),            // ex: "spring-petclinic-red"
-					Name:    fmt.Sprintf("Spring PetClinic Monolith (%s)", team), // ex: "Spring PetClinic Monolith (red)"
-					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-%s", team),
-					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-%s", team),
-				},
-				{
-					Id:      fmt.Sprintf("spring-petclinic-api-gateway-%s", team),                   // ex: "spring-petclinic-api-gateway-red"
-					Name:    fmt.Sprintf("Spring PetClinic Microservices - API Gateway (%s)", team), // ex: "Spring PetClinic Microservices - API Gateway (red)"
-					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-api-gateway-%s", team),
-					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-api-gateway-%s", team),
-				},
-				{
-					Id:      fmt.Sprintf("spring-petclinic-customers-service-%s", team),
-					Name:    fmt.Sprintf("Spring PetClinic Microservices - Customers Service (%s)", team),
-					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-customers-service-%s", team),
-					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-customers-service-%s", team),
-				},
-				{
-					Id:      fmt.Sprintf("spring-petclinic-vets-service-%s", team),
-					Name:    fmt.Sprintf("Spring PetClinic Microservices - Veterinarians Service (%s)", team),
-					RepoUrl: fmt.Sprintf("mincongclassroom/spring-petclinic-vets-service-%s", team),
-					WebUrl:  fmt.Sprintf("https://hub.docker.com/r/mincongclassroom/spring-petclinic-vets-service-%s", team),
-				},
-			},
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(info)
-	})
+	http.HandleFunc("/", teamInfoHandler(team, members))
 
 	fmt.Println("Server running on port " + port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
